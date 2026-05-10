@@ -66,14 +66,16 @@ Rendox adds a `date` filter for formatting date values. Defaults to `%d-%m-%Y`, 
 Running `rendox gen` on the above template produces:
 
 ```toml
-template = "/home/user/templates/contract.docx"
+[config]
+template_path = "/home/user/templates/contract.docx"
 
+[field]
 name = ""
 total = ""
 due_date = ""
 ```
 
-The `template` field is set automatically — you only need to fill in the rest.
+The `[config]` section is set automatically — you only need to fill in the values under `[field]`.
 
 ## Why Rendox?
 
