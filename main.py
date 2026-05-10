@@ -1,6 +1,9 @@
-from docxtpl import DocxTemplate
 from pathlib import Path
 import zipfile
+import errno
+
+from docxtpl import DocxTemplate
+from tomlkit.items import Table
 import tomlkit
 
 
@@ -33,18 +36,50 @@ def create_input_file(path: str | Path, template_path: str | Path) -> None:
         tomlkit.dump(doc, f)
 
 
+def render_template(input_path: str | Path, output_path: str | Path) -> None:
+    input_path = Path(input_path)
+    with open(input_path, "r") as f:
+        doc = tomlkit.load(f)
+
+    config_table: Table | None = doc.get("config")
+    if (
+        not isinstance(config_table, Table)
+        or "template_path" not in config_table
+    ):
+        raise ValueError(
+            f"Invalid input file: {input_path.as_posix()!r} does not have a valid config table"
+        )
+
+    field_table: Table | None = doc.get("field")
+    if not isinstance(field_table, Table):
+        raise ValueError(
+            f"Invalid input file: {input_path.as_posix()!r} does not have a field table"
+        )
+
+    template_path = Path(config_table["template_path"])
+    if not template_path.exists():
+        raise FileNotFoundError(
+            errno.ENOENT, f"Template not found: {template_path.as_posix()!r}"
+        )
+
+    template = DocxTemplate(template_path)
+    template.render(dict(field_table))
+    template.save(output_path)
+
+
 def main():
-    template_file = Path("template.docx")
     input_file = Path("input.toml")
-    if template_file.exists():
-        create_input_file(input_file, template_file)
+    output_file = Path("output.docx")
+
+    if input_file.exists():
+        render_template(input_file, output_file)
         print(
-            f"Input file created at {input_file.as_posix()!r} from template {template_file.as_posix()!r}"
+            f"Rendered {input_file.as_posix()!r} to {output_file.as_posix()!r}"
         )
 
     else:
         print(
-            f"Place {template_file.as_posix()!r} to test {create_input_file.__name__}() function"
+            f"Generate {input_file.as_posix()!r} to test {render_template.__name__}() function"
         )
 
 
