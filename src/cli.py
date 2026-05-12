@@ -1,4 +1,10 @@
+from typing import Annotated
+from pathlib import Path
+
 import typer
+import rich
+
+from core import create_input_file, extract_template_variables
 
 
 app = typer.Typer(
@@ -21,9 +27,48 @@ Workflow:
 
 
 @app.command()
-def gen() -> None:
+def gen(
+    template: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            readable=True,
+            help="Path to a .docx template",
+        ),
+    ],
+) -> None:
     """Generate a TOML input file from a .docx template."""
-    raise NotImplementedError("Todo: gen()")
+    if template.suffix.lower() != ".docx":
+        typer.secho(
+            "Error: expected a .docx template file",
+            err=True,
+            fg=typer.colors.RED,
+        )
+        rich.print(
+            f"Path: [link=file://{template.resolve()}]{template.as_posix()}[/link]"
+        )
+        raise typer.Exit(code=1)
+
+    fields = extract_template_variables(template)
+    rich.print(f"Found [green]{len(fields)}[/green] fields:")
+    for field in fields:
+        rich.print(f"    [dim]-[/dim] {field}")
+
+    print()
+
+    # TODO: Unhardcode input_path
+    input_path = Path("input.toml")
+    create_input_file(input_path, template)
+    rich.print(
+        f"[green]✓ Generated [link=file://{input_path.resolve()}]{input_path.as_posix()}[/link][/green]",
+        end="\n\n",
+    )
+
+    typer.echo("Next:")
+    typer.echo("    Edit input.toml and run:")
+    typer.echo("    rendox render input.toml")
 
 
 @app.command()
