@@ -4,7 +4,7 @@ from pathlib import Path
 from rich.console import Console
 import typer
 
-from core import create_input_file, extract_template_variables
+from core import create_input_file, extract_template_variables, render_template
 
 
 app = typer.Typer(
@@ -24,6 +24,7 @@ Workflow:
 """,
     rich_markup_mode="rich",
 )
+
 console = Console()
 err_console = Console(stderr=True)
 
@@ -102,16 +103,65 @@ def gen(
 
 
 @app.command()
-def render() -> None:
-    """Render a .docx document using a input file."""
-    raise NotImplementedError("Todo: render()")
+def render(
+    input_: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            readable=True,
+            help="Path to the .toml input file",
+        ),
+    ],
+    output: Annotated[
+        Path,
+        typer.Option(
+            "--output",
+            "-o",
+            metavar="INPUT",
+            help="Path for the rendered .docx file",
+        ),
+    ] = Path("output.docx"),
+    force: Annotated[
+        bool,
+        typer.Option(
+            "--force",
+            "-f",
+            help="Force overwrite output file if exists without prompting",
+        ),
+    ] = False,
+) -> None:
+    """Render a .docx document using an input file."""
+    if input_.suffix.lower() != ".toml":
+        print_err("expected a .toml input file")
+        console.print(f"Path: {format_path(input_)}")
+        raise typer.Exit(1)
+
+    if output.exists():
+        if not output.is_file():
+            print_err("output path exists and path is not a file")
+            console.print(f"Path: {format_path(output)}")
+            raise typer.Exit(1)
+
+        if not force:
+            typer.confirm(
+                f"File {output.as_posix()!r} exists. Overwrite?",
+                abort=True,
+            )
+
+    console.print("[bold]Rendering...[/bold]")
+    render_template(input_, output)
+    console.print(
+        f"[green]Rendered [bold]successfully[/bold] to {format_path(output)}[/green]"
+    )
 
 
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context) -> None:
     if ctx.invoked_subcommand is None:
         console.print(ctx.get_help())
-        raise typer.Exit(code=0)
+        raise typer.Exit(0)
 
 
 if __name__ == "__main__":
