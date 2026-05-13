@@ -38,6 +38,14 @@ def gen(
             help="Path to a .docx template",
         ),
     ],
+    output: Annotated[
+        Path,
+        typer.Option(
+            "--output",
+            "-o",
+            help="Path for the generated TOML file",
+        ),
+    ] = Path("input.toml"),
 ) -> None:
     """Generate a TOML input file from a .docx template."""
     if template.suffix.lower() != ".docx":
@@ -58,11 +66,9 @@ def gen(
 
     print()
 
-    # TODO: Unhardcode input_path
-    input_path = Path("input.toml")
-    create_input_file(input_path, template)
+    create_input_file(output, template)
     rich.print(
-        f"[green]✓ Generated [link=file://{input_path.resolve()}]{input_path.as_posix()}[/link][/green]",
+        f"[green]✓ Generated [link=file://{output.resolve()}]{output.as_posix()}[/link][/green]",
         end="\n\n",
     )
 
