@@ -50,6 +50,14 @@ def gen(
             help="Path for the generated TOML file",
         ),
     ] = Path("input.toml"),
+    force: Annotated[
+        bool,
+        typer.Option(
+            "--force",
+            "-f",
+            help="Force overwrite output file if exists without prompting",
+        ),
+    ] = False,
 ) -> None:
     """Generate a TOML input file from a .docx template."""
     if template.suffix.lower() != ".docx":
@@ -60,6 +68,22 @@ def gen(
         )
         rich.print(f"Path: {format_path(template)}")
         raise typer.Exit(code=1)
+
+    if output.exists():
+        if not output.is_file():
+            typer.secho(
+                "Error: output path exists and path is not a file",
+                err=True,
+                fg=typer.colors.RED,
+            )
+            rich.print(f"Path: {format_path(output)}")
+            raise typer.Exit(1)
+
+        if not force:
+            typer.confirm(
+                f"File {output.as_posix()!r} exists. Overwrite?",
+                abort=True,
+            )
 
     fields = extract_template_variables(template)
     rich.print(f"Found [green]{len(fields)}[/green] fields:")
