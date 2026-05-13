@@ -1,8 +1,8 @@
 from typing import Annotated
 from pathlib import Path
 
+from rich.console import Console
 import typer
-import rich
 
 from core import create_input_file, extract_template_variables
 
@@ -24,10 +24,16 @@ Workflow:
 """,
     rich_markup_mode="rich",
 )
+console = Console()
+err_console = Console(stderr=True)
 
 
 def format_path(path: Path) -> str:
     return f"[link=file://{path.resolve()}]{path.as_posix()}[/link]"
+
+
+def print_err(msg: str) -> None:
+    err_console.print(f"[red][bold]Error: [/bold]{msg}[/red]")
 
 
 @app.command()
@@ -61,22 +67,14 @@ def gen(
 ) -> None:
     """Generate a TOML input file from a .docx template."""
     if template.suffix.lower() != ".docx":
-        typer.secho(
-            "Error: expected a .docx template file",
-            err=True,
-            fg=typer.colors.RED,
-        )
-        rich.print(f"Path: {format_path(template)}")
-        raise typer.Exit(code=1)
+        print_err("expected a .docx template file")
+        console.print(f"Path: {format_path(template)}")
+        raise typer.Exit(1)
 
     if output.exists():
         if not output.is_file():
-            typer.secho(
-                "Error: output path exists and path is not a file",
-                err=True,
-                fg=typer.colors.RED,
-            )
-            rich.print(f"Path: {format_path(output)}")
+            print_err("output path exists and path is not a file")
+            console.print(f"Path: {format_path(output)}")
             raise typer.Exit(1)
 
         if not force:
@@ -86,21 +84,21 @@ def gen(
             )
 
     fields = extract_template_variables(template)
-    rich.print(f"Found [green]{len(fields)}[/green] fields:")
+    console.print(f"Found [green]{len(fields)}[/green] fields:")
     for field in fields:
-        rich.print(f"    [dim]-[/dim] {field}")
+        console.print(f"    [dim]-[/dim] {field}")
 
-    print()
+    console.print()
 
     create_input_file(output, template)
-    rich.print(
+    console.print(
         f"[green]✓ Generated {format_path(output)}[/green]",
         end="\n\n",
     )
 
-    typer.echo("Next:")
-    typer.echo("    Edit input.toml and run:")
-    typer.echo("    rendox render input.toml")
+    console.print("Next:")
+    console.print("    Edit input.toml and run:")
+    console.print("    rendox render input.toml")
 
 
 @app.command()
@@ -112,7 +110,7 @@ def render() -> None:
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context) -> None:
     if ctx.invoked_subcommand is None:
-        typer.echo(ctx.get_help())
+        console.print(ctx.get_help())
         raise typer.Exit(code=0)
 
 
