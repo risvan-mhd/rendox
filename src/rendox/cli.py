@@ -26,6 +26,10 @@ Workflow:
 )
 
 
+def format_path(path: Path) -> str:
+    return f"[link=file://{path.resolve()}]{path.as_posix()}[/link]"
+
+
 @app.command()
 def gen(
     template: Annotated[
@@ -54,9 +58,7 @@ def gen(
             err=True,
             fg=typer.colors.RED,
         )
-        rich.print(
-            f"Path: [link=file://{template.resolve()}]{template.as_posix()}[/link]"
-        )
+        rich.print(f"Path: {format_path(template)}")
         raise typer.Exit(code=1)
 
     fields = extract_template_variables(template)
@@ -68,7 +70,7 @@ def gen(
 
     create_input_file(output, template)
     rich.print(
-        f"[green]✓ Generated [link=file://{output.resolve()}]{output.as_posix()}[/link][/green]",
+        f"[green]✓ Generated {format_path(output)}[/green]",
         end="\n\n",
     )
 
