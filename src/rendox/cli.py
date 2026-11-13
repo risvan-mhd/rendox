@@ -4,7 +4,7 @@ from pathlib import Path
 from rich.console import Console
 import typer
 
-from core import create_input_file, extract_template_variables, render_template
+from .core import create_input_file, extract_template_variables, render_template
 
 
 app = typer.Typer(
