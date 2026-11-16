@@ -1,3 +1,4 @@
+from itertools import groupby
 from pathlib import Path
 import zipfile
 import errno
@@ -5,6 +6,20 @@ import errno
 from docxtpl import DocxTemplate
 from tomlkit.items import Table
 import tomlkit
+
+
+def get_group_name(var: str) -> str:
+    return var.split("_")[0]
+
+
+def group_vars(vars_: set[str]) -> list[list[str]]:
+    vars_sorted = sorted(
+        vars_, key=lambda var: (get_group_name(var).lower(), len(var))
+    )
+
+    return [
+        list(group) for _, group in groupby(vars_sorted, key=get_group_name)
+    ]
 
 
 def extract_template_variables(path: str | Path) -> set[str]:
@@ -21,14 +36,16 @@ def create_input_file(path: str | Path, template_path: str | Path) -> None:
 
     doc = tomlkit.document()
     variables = extract_template_variables(template_path)
+    grouped_variables = group_vars(variables)
 
     config_table = tomlkit.table(is_super_table=True)
     config_table.add("template_path", template_path.as_posix())
     doc.add("config", config_table)
 
     field_table = tomlkit.table(is_super_table=True)
-    for var in variables:
-        field_table.add(var, "")
+    for group in grouped_variables:
+        for var in group:
+            field_table.add(var, "")
 
     doc.add("field", field_table)
 
